@@ -48,9 +48,17 @@ class Request:
 
     @staticmethod
     async def _get_data(response: ClientResponse) -> dict | str:
-        try:
-            data = await response.json(loads=loads)
-        except JSONDecodeError:  # Could be RSS
+        content_type = response.headers.get("Content-Type", "")
+        log.debug(f"Content-Type: {content_type}")
+
+        if "application/json" in content_type:
+            try:
+                data = await response.json(loads=loads)
+            except JSONDecodeError:
+                log.warning("JSONDecodeError occurred")
+                data = await response.text()
+        else:
+            log.warning(f"Unexpected Content-Type: {content_type}")
             data = await response.text()
 
         return data
